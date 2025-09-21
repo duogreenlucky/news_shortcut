@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "738612012798",
+    "firebase_url": "https://news-shorecut-default-rtdb.firebaseio.com",
+    "project_id": "news-shorecut",
+    "storage_bucket": "news-shorecut.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:738612012798:android:022ebfcf07387c022f67af",
+        "android_client_info": {
+          "package_name": "com.duolucky.newsshortcutapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEKwt3XDedPbwBSN8uDfRfjaAYwFfSl18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
