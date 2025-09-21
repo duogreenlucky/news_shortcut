@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.graphics.Color.Companion.Yellow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +50,7 @@ import androidx.tv.material3.Surface
 import com.duolucky.newsshortcutapp.ui.theme.NewsShortcut新聞捷徑AppTheme
 import androidx.core.net.toUri
 import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
 import com.google.firebase.Firebase
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.database
@@ -56,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import androidx.tv.material3.Text
 
 
 //class MainActivity : AppCompatActivity() {
@@ -375,6 +379,7 @@ fun TvHomeScreen() {
         Text(
             text = "Youtube電視頻道",
             style = MaterialTheme.typography.headlineLarge,
+            color = White,
             modifier = Modifier
         )
 
@@ -384,6 +389,7 @@ fun TvHomeScreen() {
         Text(
             text = "新聞",
             style = MaterialTheme.typography.headlineSmall,
+            color = White,
             modifier = Modifier
         )
 
@@ -404,6 +410,7 @@ fun TvHomeScreen() {
         Text(
             text = "綜合",
             style = MaterialTheme.typography.headlineSmall,
+            color = White,
             modifier = Modifier
         )
 
@@ -437,7 +444,14 @@ fun TvHomeScreen() {
                 it.finish()
                 it.startActivity(intent)
             }
-        }) {
+        },
+        colors = ButtonDefaults.colors(
+            containerColor = Color.DarkGray,
+            contentColor = Color.White,
+            focusedContainerColor = Color.Red,
+            focusedContentColor = Color.White,
+            pressedContainerColor = Color.Green
+        )) {
             Text("重新下載頻道資訊")
         }
     }
