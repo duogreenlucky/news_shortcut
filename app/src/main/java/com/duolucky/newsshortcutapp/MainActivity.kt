@@ -1,6 +1,5 @@
 package com.duolucky.newsshortcutapp
 
-import android.R.attr.text
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -10,25 +9,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.tv.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -37,7 +33,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
@@ -71,9 +69,13 @@ import kotlinx.coroutines.withContext
 //    }
 //}
 
-val newsNameList = mutableStateListOf<NewsList>()
-var serverAmount = 0.toLong()
-var machineAmount = 0.toLong()
+val newsNameList = mutableStateListOf<ChannelList>()
+var newsServerAmount = 0.toLong()
+var newsMachineAmount = 0.toLong()
+
+val generalNameList = mutableStateListOf<ChannelList>()
+var generalServerAmount = 0.toLong()
+var generalMachineAmount = 0.toLong()
 
 class MainActivity : ComponentActivity() {
     private lateinit var cloudDatabase: DatabaseReference
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
 
         val builder = AlertDialog.Builder(this)
         builder.setTitle("同步中...")
-        builder.setMessage("正在檢查新聞資料庫是否有更新...")
+        builder.setMessage("正在檢查頻道資料庫是否有更新...")
         builder.setCancelable(false)
         CoroutineScope(Dispatchers.IO).launch {
 //            val alertDialog = withContext(Dispatchers.Main) {
@@ -94,13 +96,13 @@ class MainActivity : ComponentActivity() {
 //                bud
 //            }
 //
-//            serverAmount = cloudDatabase.child("allAmount").get().await().value as? Long ?: 0
-//            machineAmount = getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+//            newsServerAmount = cloudDatabase.child("allAmount").get().await().value as? Long ?: 0
+//            newsMachineAmount = getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
 //                .getLong("amount", 0)
-//            Log.d("AppLog", "serverAmount: $serverAmount")
-//            Log.d("AppLog", "machineAmount: $machineAmount")
+//            Log.d("AppLog", "newsServerAmount: $newsServerAmount")
+//            Log.d("AppLog", "newsMachineAmount: $newsMachineAmount")
 //
-//            if ( serverAmount != machineAmount) {
+//            if ( newsServerAmount != newsMachineAmount) {
 //                withContext(Dispatchers.Main) {
 //                    alertDialog.dismiss()
 //                }
@@ -112,13 +114,13 @@ class MainActivity : ComponentActivity() {
 //                    bud
 //                }
 //
-//                val firstAmount = machineAmount + 1
+//                val firstAmount = newsMachineAmount + 1
 //                getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
 //                    .edit {
-//                        putLong("amount", serverAmount.toLong())
+//                        putLong("amount", newsServerAmount.toLong())
 //                    }
 //
-//                for ( num in firstAmount..serverAmount ) {
+//                for ( num in firstAmount..newsServerAmount ) {
 //                    val newsName = cloudDatabase.child("news").child("$num").child("name")
 //                        .get().await().value.toString()
 //                    getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
@@ -132,7 +134,7 @@ class MainActivity : ComponentActivity() {
 //                    alertDialog.dismiss()
 //                }
 //            } else {
-//                for ( num in 1..machineAmount.toInt() ) {
+//                for ( num in 1..newsMachineAmount.toInt() ) {
 //                    val newsName = getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
 //                        .getString("$num-name", "error")
 //                    newsNameList.add(NewsList(newsName, num.toLong()))
@@ -153,7 +155,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    TvHomeScreen()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Image(
+                            painter = painterResource(id = R.drawable.background),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop // 自動裁切填滿畫面
+                        )
+
+                        TvHomeScreen() // 你的主畫面 UI
+                    }
                 }
             }
         }
@@ -230,7 +241,7 @@ fun TvHomeScreen() {
 
     val builder = AlertDialog.Builder(context)
     builder.setTitle("同步中...")
-    builder.setMessage("正在檢查新聞資料庫是否有更新...")
+    builder.setMessage("正在檢查頻道資料庫是否有更新...")
     builder.setCancelable(false)
     LaunchedEffect(Unit) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -240,58 +251,113 @@ fun TvHomeScreen() {
                 bud
             }
 
-            serverAmount = cloudDatabase.child("allAmount").get().await().value as? Long ?: 0
-            machineAmount = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-                .getLong("amount", 0)
-            Log.d("AppLog", "serverAmount: $serverAmount")
-            Log.d("AppLog", "machineAmount: $machineAmount")
+            //新聞頻道更新
+            newsServerAmount = cloudDatabase.child("news").child("amount").get().await().value as? Long ?: 0
+            newsMachineAmount = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                .getLong("newsAmount", 0)
+            Log.d("AppLog", "newsServerAmount: $newsServerAmount")
+            Log.d("AppLog", "newsMachineAmount: $newsMachineAmount")
 
-            if ( serverAmount != machineAmount) {
+            if ( newsServerAmount != newsMachineAmount) {
                 withContext(Dispatchers.Main) {
                     alertDialog.dismiss()
                 }
                 builder.setTitle("下載中...")
-                builder.setMessage("正在下載新的新聞資訊...")
+                builder.setMessage("正在下載新的新聞頻道資訊...")
                 val alertDialog = withContext(Dispatchers.Main) {
                     val bud = builder.create()
                     bud.show()
                     bud
                 }
 
-                val firstAmount = machineAmount + 1
+                val firstAmount = newsMachineAmount + 1
                 context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
                     .edit {
-                        putLong("amount", serverAmount.toLong())
+                        putLong("newsAmount", newsServerAmount.toLong())
                     }
 
-                for ( num in 1..machineAmount.toInt() ) {
+                for ( num in 1..newsMachineAmount.toInt() ) {
                     val newsName = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-                        .getString("$num-name", "error")
-                    newsNameList.add(NewsList(newsName, num.toLong()))
+                        .getString("news-$num-name", "error")
+                    newsNameList.add(ChannelList(newsName, num.toLong()))
                 }
 
-                for ( num in firstAmount..serverAmount ) {
+                for ( num in firstAmount..newsServerAmount ) {
                     val newsName = cloudDatabase.child("news").child("$num").child("name")
                         .get().await().value.toString()
                     context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
                         .edit {
-                            putString("$num-name", newsName)
+                            putString("news-$num-name", newsName)
                         }
-                    newsNameList.add(NewsList(newsName, num.toLong()))
+                    newsNameList.add(ChannelList(newsName, num.toLong()))
                 }
 
                 withContext(Dispatchers.Main) {
                     alertDialog.dismiss()
                 }
             } else {
-                for ( num in 1..machineAmount.toInt() ) {
+                for ( num in 1..newsMachineAmount.toInt() ) {
                     val newsName = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-                        .getString("$num-name", "error")
-                    newsNameList.add(NewsList(newsName, num.toLong()))
+                        .getString("news-$num-name", "error")
+                    newsNameList.add(ChannelList(newsName, num.toLong()))
                 }
             }
 
             Log.d("AppLog", "NewsNameList: $newsNameList")
+
+            //綜合頻道更新
+            generalServerAmount = cloudDatabase.child("general").child("amount").get().await().value as? Long ?: 0
+            generalMachineAmount = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                .getLong("generalAmount", 0)
+            Log.d("AppLog", "generalServerAmount: $generalServerAmount")
+            Log.d("AppLog", "generalMachineAmount: $generalMachineAmount")
+
+            if ( generalServerAmount != generalMachineAmount) {
+                withContext(Dispatchers.Main) {
+                    alertDialog.dismiss()
+                }
+                builder.setTitle("下載中...")
+                builder.setMessage("正在下載新的綜合頻道資訊...")
+                val alertDialog = withContext(Dispatchers.Main) {
+                    val bud = builder.create()
+                    bud.show()
+                    bud
+                }
+
+                val firstAmount = generalMachineAmount + 1
+                context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                    .edit {
+                        putLong("generalAmount", generalServerAmount.toLong())
+                    }
+
+                for ( num in 1..generalMachineAmount.toInt() ) {
+                    val generalName = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                        .getString("general-$num-name", "error")
+                    generalNameList.add(ChannelList(generalName, num.toLong()))
+                }
+
+                for ( num in firstAmount..generalServerAmount ) {
+                    val generalName = cloudDatabase.child("general").child("$num").child("name")
+                        .get().await().value.toString()
+                    context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                        .edit {
+                            putString("general-$num-name", generalName)
+                        }
+                    generalNameList.add(ChannelList(generalName, num.toLong()))
+                }
+
+                withContext(Dispatchers.Main) {
+                    alertDialog.dismiss()
+                }
+            } else {
+                for ( num in 1..generalMachineAmount.toInt() ) {
+                    val generalName = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
+                        .getString("general-$num-name", "error")
+                    generalNameList.add(ChannelList(generalName, num.toLong()))
+                }
+            }
+
+            Log.d("AppLog", "generalNameList: $generalNameList")
 
             withContext(Dispatchers.Main) {
                 alertDialog.dismiss()
@@ -302,11 +368,12 @@ fun TvHomeScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(32.dp)
 
     ) {
         Text(
-            text = "新聞捷徑App",
+            text = "Youtube電視頻道",
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier
         )
@@ -314,11 +381,39 @@ fun TvHomeScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text(
+            text = "新聞",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         TvLazyRow(
             contentPadding = PaddingValues(horizontal = 32.dp)
         ) {
             items(newsNameList.size) { index ->
-                FocusableCard(
+                NewsFocusableCard(
+                    index = index,
+                    focusRequester = if (index == 0) firstCardFocusRequester else null)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "綜合",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TvLazyRow(
+            contentPadding = PaddingValues(horizontal = 32.dp)
+        ) {
+            items(generalNameList.size) { index ->
+                GeneralFocusableCard(
                     index = index,
                     focusRequester = if (index == 0) firstCardFocusRequester else null)
             }
@@ -331,9 +426,12 @@ fun TvHomeScreen() {
 
             context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
                 .edit{
-                    putLong("amount", 0)
+                    putLong("newsAmount", 0)
+                    putLong("generalAmount", 0)
                 }
+            Log.d("AppLog", "GeneralAmountOnSharedPreferences: ${context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE).getLong("generalAmount", 0)}")
             newsNameList.clear()
+            generalNameList.clear()
             (context as? Activity)?.let {
                 val intent = Intent(it, MainActivity::class.java)
                 it.finish()
@@ -349,112 +447,16 @@ fun TvHomeScreen() {
             firstCardFocusRequester.requestFocus()
         }
     }
-
-//    if (showDialog.value) {
-//        androidx.tv.material3.AlertDialog(
-//            onDismissRequest = { showDialog.value = false },
-//            title = { Text("確認") },
-//            text = { Text("您確定要重新載入嗎？") },
-//            confirmButton = {
-//                Button(onClick = {
-//                    showDialog.value = false
-//                    context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-//                        .edit{
-//                            putLong("amount", 0)
-//                        }
-//                    (context as? Activity)?.let {
-//                        val intent = Intent(it, MainActivity::class.java)
-//                        it.finish()
-//                        it.startActivity(intent)
-//                    }
-//                }) {
-//                    Text("確認")
-//                }
-//            },
-//            dismissButton = {
-//                Button(onClick = {
-//                    showDialog.value = false
-//                }) {
-//                    Text("取消")
-//                }
-//            }
-//        )
-//    }
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun FocusableCard(index: Int, focusRequester: FocusRequester? = null) {
+fun NewsFocusableCard(index: Int, focusRequester: FocusRequester? = null) {
     val cloudDatabase: DatabaseReference = Firebase.database.reference
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val builder = AlertDialog.Builder(LocalContext.current)
-//    builder.setTitle("同步中...")
-//    builder.setMessage("正在檢查新聞資料庫是否有更新...")
-//    builder.setCancelable(false)
 
-    LaunchedEffect(Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-//            val alertDialog = withContext(Dispatchers.Main) {
-//                val bud = builder.create()
-//                bud.show()
-//                bud
-//            }
-//            val serverAmount = cloudDatabase.child("allAmount").get().await().value as? Long ?: 0L
-//            val machineAmount = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-//                .getLong("amount", 0)
-//
-//            if ( serverAmount != machineAmount) {
-//                withContext(Dispatchers.Main) {
-//                    alertDialog.dismiss()
-//                }
-//                builder.setTitle("下載中...")
-//                builder.setMessage("正在下載新的新聞資訊...")
-//                val alertDialog = withContext(Dispatchers.Main) {
-//                    val bud = builder.create()
-//                    bud.show()
-//                    bud
-//                }
-//
-//                val firstAmount = machineAmount + 1
-//                context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-//                    .edit {
-//                        putLong("amount", serverAmount)
-//                    }
-//
-//                for ( num in firstAmount..serverAmount ) {
-//                    val newsName = cloudDatabase.child("news").child("$num").child("name")
-//                        .get().await().value.toString()
-//                    context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-//                        .edit {
-//                            putString("$num-name", newsName)
-//                        }
-//                    newsNameList.add(NewsList(newsName, num.toLong()))
-//                }
-//            } else {
-//                for ( num in 1..machineAmount.toInt() ) {
-//                    val newsName = context.getSharedPreferences("news-shortcut", Context.MODE_PRIVATE)
-//                        .getString("$num-name", "error")
-//                    newsNameList.add(NewsList(newsName, num.toLong()))
-//                }
-//            }
-//
-//            Log.d("AppLog", "NewsNameList: $newsNameList")
-//
-//            withContext(Dispatchers.Main) {
-//                alertDialog.dismiss()
-//
-//            }
-        }
-    }
-//    val newsLinkList = listOf<NewsLinkList>(
-//        NewsLinkList("東森新聞台", "https://www.youtube.com/live/V1p33hqPrUk?si=DU5T_WYxes0MVMug", 0),
-//        NewsLinkList("TVBS", "https://www.youtube.com/live/m_dhMSvUCIc?si=fzDeyzX5Flhj_OEa", 1),
-//        NewsLinkList("寰宇新聞", "https://www.youtube.com/live/6IquAgfvYmc?si=L9CFsnvwxOrH3MWP", 2),
-//        NewsLinkList("寰宇新聞台灣台", "https://www.youtube.com/live/w87VGpgd90U?si=gmXSE4OucQ4Pw0SD", 3),
-//        NewsLinkList("公視新聞", "https://www.youtube.com/live/quwqlazU-c8?si=gUsVrw9A08QHBtQr", 4)
-//    )
-    // TV Material3 已內建 Focus 效果，不用自己寫 onFocusChanged
     androidx.tv.material3.Card(
         onClick = {
             val clickID = index + 1
@@ -467,6 +469,7 @@ fun FocusableCard(index: Int, focusRequester: FocusRequester? = null) {
             scope.launch(Dispatchers.IO) {
                 val link = cloudDatabase.child("news").child("$clickID").child("link")
                     .get().await().value.toString()
+                Log.d("AppLog", "$clickID-link: $link")
 
                 withContext(Dispatchers.Main) {
                     alertDialog.dismiss()
@@ -477,11 +480,6 @@ fun FocusableCard(index: Int, focusRequester: FocusRequester? = null) {
                     context.startActivity(intent)
                 }
             }
-//            val link = newsNameList.find{ it.amountID == index.toLong() }?.link
-//            val intent = Intent(Intent.ACTION_VIEW, link?.toUri()).apply {
-//                setPackage("com.google.android.youtube.tv")
-//            }
-//            context.startActivity(intent)
         },
         modifier = Modifier
             .padding(8.dp)
@@ -491,12 +489,12 @@ fun FocusableCard(index: Int, focusRequester: FocusRequester? = null) {
             focusedScale = 1.1f
         ),
         colors = CardDefaults.colors(
-            containerColor = Color(0xFF4A4459),       // 預設顏色
-            focusedContainerColor = Color(0xFF4A4459) // 聚焦時顏色（可改亮一點）
+            containerColor = Color(0xFF645A6E),       // 預設顏色
+            focusedContainerColor = Color(0xFF82738C) // 聚焦時顏色（可改亮一點）
         ),
         border = CardDefaults.border(
             focusedBorder = Border(
-                BorderStroke(3.dp, Color.White), // 聚焦時白框
+                BorderStroke(2.dp, Color.White), // 聚焦時白框
                 shape = RoundedCornerShape(8.dp)
             )
         )
@@ -506,9 +504,68 @@ fun FocusableCard(index: Int, focusRequester: FocusRequester? = null) {
             modifier = Modifier.fillMaxSize()
         ) {
             val num = index + 1
-//            val text = newsNameList.find { it.amountID == num.toLong() } ?.name
-//            Text("$text", color = Color.White)
             val text = newsNameList.getOrNull(index)?.name ?: "讀取中..."
+            Text(text, color = Color.White)
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun GeneralFocusableCard(index: Int, focusRequester: FocusRequester? = null) {
+    val cloudDatabase: DatabaseReference = Firebase.database.reference
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val builder = AlertDialog.Builder(LocalContext.current)
+
+    androidx.tv.material3.Card(
+        onClick = {
+            val clickID = index + 1
+            Log.d("AppLog", "點擊 $clickID")
+            builder.setTitle("下載中...")
+            builder.setMessage("正在向伺服器取得資訊...")
+            builder.setCancelable(false)
+            val alertDialog = builder.create()
+            alertDialog.show()
+            scope.launch(Dispatchers.IO) {
+                val link = cloudDatabase.child("general").child("$clickID").child("link")
+                    .get().await().value.toString()
+                Log.d("AppLog", "$clickID-link: $link")
+
+                withContext(Dispatchers.Main) {
+                    alertDialog.dismiss()
+
+                    val intent = Intent(Intent.ACTION_VIEW, link.toUri()).apply {
+                        setPackage("com.google.android.youtube.tv")
+                    }
+                    context.startActivity(intent)
+                }
+            }
+        },
+        modifier = Modifier
+            .padding(8.dp)
+            .size(200.dp, 120.dp)
+            .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier),
+        scale = CardDefaults.scale( // 有焦點時放大
+            focusedScale = 1.1f
+        ),
+        colors = CardDefaults.colors(
+            containerColor = Color(0xFF46456E),       // 預設顏色
+            focusedContainerColor = Color(0xFF645A8C) // 聚焦時顏色（可改亮一點）
+        ),
+        border = CardDefaults.border(
+            focusedBorder = Border(
+                BorderStroke(2.dp, Color.White), // 聚焦時白框
+                shape = RoundedCornerShape(8.dp)
+            )
+        )
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val num = index + 1
+            val text = generalNameList.getOrNull(index)?.name ?: "讀取中..."
             Text(text, color = Color.White)
         }
     }
